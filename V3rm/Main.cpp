@@ -222,13 +222,63 @@ void ConsoleBypass(const char* Title) {
 }
 
 
+namespace Memory {
+
+	bool Compare(const char* pData, const char* bMask, const char* szMask)
+	{
+		while (*szMask) {
+			if (*szMask != '?') {
+				if (*pData != *bMask) return 0;
+			}
+			++szMask, ++pData, ++bMask;
+		}
+		return 1;
+	}
+
+	DWORD Scan(const char* vftable)  // Credits goes to tepig
+	{
+		MEMORY_BASIC_INFORMATION BasicMemoryInformation = {};
+		SYSTEM_INFO SystemInformation = {};
+		GetSystemInfo(&SystemInformation);
+		DWORD StartingMemorySearchPosition = (DWORD)SystemInformation.lpMinimumApplicationAddress;
+		DWORD MaximumSearchBoundary = (DWORD)SystemInformation.lpMaximumApplicationAddress;
+		do {
+			while (VirtualQuery((void*)StartingMemorySearchPosition, &BasicMemoryInformation, sizeof(BasicMemoryInformation))) {
+				if ((BasicMemoryInformation.Protect & PAGE_READWRITE) && !(BasicMemoryInformation.Protect & PAGE_GUARD)) {
+					for (DWORD Key = (DWORD)(BasicMemoryInformation.BaseAddress); ((Key - (DWORD)(BasicMemoryInformation.BaseAddress) < BasicMemoryInformation.RegionSize)); ++Key) {
+						if (Compare((const char*)Key, vftable, "xxxx")) {
+							return Key;
+						};
+					};
+				};
+				StartingMemorySearchPosition += BasicMemoryInformation.RegionSize;
+			};
+		} while (StartingMemorySearchPosition < MaximumSearchBoundary);
+		return 0x0;
+	}
+}
+
+void gay()
+{
+	printf("axon is shit");
+	uintptr_t ScriptContextVFTable = x(0x1C284FC);
+	uintptr_t ScriptContext = Memory::Scan((char*)&ScriptContextVFTable);
+	DWORD v2 = ScriptContext;
+	DWORD v3 = 0;
+	m_rL = v2 + 56 * v3 + 172 ^ *(DWORD*)(v2 + 56 * v3 + 172);
+	printf("%x08\n", m_rL);
+}
+
+
+
 void main()
 {
 	ConsoleBypass("Axon ");
 	printf("Hooking To Gettop....\n");
 	// u need to write the luastate and scriptcontext bullshit
 	printf("Done Hooking Gettop!\n");
-
+	gay();
+		
 	printf("YEET\n");
 	m_L = luaL_newstate();
 	printf("YEETED\n");
@@ -294,7 +344,7 @@ void main()
 	MessageBoxA(NULL, "OK!", "Loaded", MB_OK);
 //	MessageBoxA(NULL, "Credits to RoboMat for his hook", MB_OK);
 
-	MessageBoxA(NULL, "Credits to ElKoax, and RoboMat, and ElKoax again for the BANGING addies :DDD ", "Credits", MB_OK);
+	MessageBoxA(NULL, "Credits to ElKoax/KoaxyBoy and ElKoax/KoaxyBoy again for the BANGING addies :DDD ", "Credits", MB_OK);
 }
 
 

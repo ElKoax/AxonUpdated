@@ -1,27 +1,28 @@
+﻿/*
+ * File Name: Retcheck.h
+ * Author(s): Chirality
+ *
+ * Last modified: 15-03-2018
+ *
+ * Copyright � 2019, Paramake Ltd
+ */
+
 #pragma once
 
 #include <Windows.h>
 #include <map>
+#include <iostream>
 
-/*
-* @ Title: Retcheck bypass
-* @ Author: Chilarity
-* @ Last modified: 15-03-2018
-*
-*/
-
-//-------------------------------------------------\\
-
-/*
-* Hacker Disassembler Engine 32 C
-* Copyright (c) 2008-2009, Vyacheslav Patkov.
-* All rights reserved.
-*
-*/
+ /*
+ * Hacker Disassembler Engine 32 C
+ * Copyright (c) 2008-2009, Vyacheslav Patkov.
+ * All rights reserved.
+ *
+ */
 
 #include <string.h>
 #include <stdint.h>
-
+#include <stdexcept>
 #define F_MODRM         0x00000001
 #define F_SIB           0x00000002
 #define F_IMM8          0x00000004
@@ -34,8 +35,8 @@
 #define F_2IMM16        0x00000800
 #define F_ERROR         0x00001000
 #define F_ERROR_OPCODE  0x00002000
-#define F_ERROR_LENGTH  0x00004000
-#define F_ERROR_LOCK    0x00008000
+#define F_ERROrLENGTH  0x00004000
+#define F_ERROrLOCK    0x00008000
 #define F_ERROR_OPERAND 0x00010000
 #define F_PREFIX_REPNZ  0x01000000
 #define F_PREFIX_REPX   0x02000000
@@ -97,7 +98,7 @@ extern "C" {
 #endif
 
 	/* __cdecl */
-	static unsigned int hde32_disasm(const void *code, hde32s *hs);
+	static unsigned int hde32_disasm(const void* code, hde32s* hs);
 
 #ifdef __cplusplus
 }
@@ -175,9 +176,9 @@ static unsigned char hde32_table[] = {
 #pragma warning(disable:4701)
 #endif
 
-unsigned int hde32_disasm(const void *code, hde32s *hs)
+unsigned int hde32_disasm(const void* code, hde32s* hs)
 {
-	uint8_t x, c, *p = (uint8_t*)code, cflags, opcode, pref = 0;
+	uint8_t x, c, * p = (uint8_t*)code, cflags, opcode, pref = 0;
 	uint8_t* ht = hde32_table, m_mod, m_reg, m_rm, disp_size = 0;
 
 	memset(hs, 0, sizeof(hde32s));
@@ -280,7 +281,7 @@ pref_done:
 
 		if (pref & PRE_LOCK) {
 			if (m_mod == 3) {
-				hs->flags |= F_ERROR | F_ERROR_LOCK;
+				hs->flags |= F_ERROR | F_ERROrLOCK;
 			}
 			else {
 				uint8_t* table_end, op = opcode;
@@ -300,7 +301,7 @@ pref_done:
 						else
 							break;
 					}
-				hs->flags |= F_ERROR | F_ERROR_LOCK;
+				hs->flags |= F_ERROR | F_ERROrLOCK;
 			no_lock_error:
 				;
 			}
@@ -434,7 +435,7 @@ pref_done:
 		p += disp_size;
 	}
 	else if (pref & PRE_LOCK)
-		hs->flags |= F_ERROR | F_ERROR_LOCK;
+		hs->flags |= F_ERROR | F_ERROrLOCK;
 
 	if (cflags & C_IMM_P66) {
 		if (cflags & C_REL32) {
@@ -492,7 +493,7 @@ pref_done:
 disasm_done:
 
 	if ((hs->len = (uint8_t)(p - (uint8_t*)code)) > 15) {
-		hs->flags |= F_ERROR | F_ERROR_LENGTH;
+		hs->flags |= F_ERROR | F_ERROrLENGTH;
 		hs->len = 15;
 	}
 
@@ -503,42 +504,48 @@ disasm_done:
 //-------------------------------------------------
 
 
-class Ret
+class retcheck
 {
 public:
-	template<typename T>
-	static T unprotect(BYTE* funcaddr)
+	static DWORD unprotect(BYTE* funcaddr)
 	{
 		static int total_alloc;
 		static std::map<DWORD, DWORD> cache;
 		try
 		{
 			DWORD& cached_func = cache.at((DWORD)funcaddr);
-			return (T)(cached_func);
+			return (DWORD)(cached_func);
 		}
-		catch (std::out_of_range&) {} //cache miss, do nothing and continue
+		catch (std::out_of_range&)
+		{
+		} //cache miss, do nothing and continue
 
 		DWORD func_size = get_func_end(funcaddr) - funcaddr;
-		total_alloc += func_size;
-		if (total_alloc > max_alloc)
-			return (T)(funcaddr); //failsafe, using too much memory (over 1MB)
+		if (!func_size)
+		{
+			return (DWORD)(funcaddr);
+		}
+
+		if (total_alloc + func_size > max_alloc)
+			return (DWORD)(funcaddr); //failsafe, using too much memory (over 1MB)
 
 		void* new_func = VirtualAlloc(NULL, func_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 		if (new_func == NULL)
-			return (T)(funcaddr); //alloc failed
+			return (DWORD)(funcaddr); //alloc failed
 
+		total_alloc += func_size;
 		memcpy(new_func, funcaddr, func_size);
-		cache.emplace((DWORD)funcaddr, (DWORD)new_func);
-
 		if (disable_retcheck((DWORD)new_func, func_size))
 		{
+			cache.emplace((DWORD)funcaddr, (DWORD)new_func);
 			fix_calls((DWORD)new_func, (DWORD)funcaddr, func_size);
-			return (T)(new_func);
+			return (DWORD)(new_func);
 		}
 
 		//no retcheck was found, abort
-		VirtualFree(new_func, func_size, MEM_RELEASE);
-		return (T)(funcaddr);
+		VirtualFree(new_func, 0, MEM_RELEASE);
+		VirtualFree(new_func, func_size, MEM_DECOMMIT);
+		return (DWORD)(funcaddr);
 	}
 
 private:
@@ -551,11 +558,19 @@ private:
 
 	static BYTE* get_func_end(BYTE* funcaddr) //terrible
 	{
-		BYTE* addr = funcaddr;
-		do
+		BYTE* addr = funcaddr + 0x10;
+		while (true)
 		{
+			if (IsBadReadPtr(addr, 4))
+			{
+				return funcaddr;
+			}
+			if (is_prolog(addr))
+			{
+				break;
+			}
 			addr += 0x10;
-		} while (!is_prolog(addr));
+		}
 		return addr;
 	}
 
@@ -570,7 +585,7 @@ private:
 			if (disasm.opcode == 0x3B) //CMP
 			{
 				DWORD ptr = disasm.disp.disp32;
-				if (ptr > 0xFF)
+				if (ptr > 0xFFFF) //filter CMP instructions, disp32 should be a pointer to the bound constant
 				{
 					memcpy((void*)(disasm_ptr), "\xF9\x90\x90\x90\x90\x90", 6); //setc nop nop nop nop nop
 					has_retcheck = true;
@@ -579,6 +594,19 @@ private:
 			disasm_ptr += disasm.len;
 		}
 		return has_retcheck;
+	}
+
+	static BYTE test_function(DWORD func)
+	{
+		__try
+		{
+			BYTE x = *(BYTE*)func;
+			return x == 0 ? 1 : x;
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER)
+		{
+			return 0;
+		}
 	}
 
 	static void fix_calls(DWORD new_func, DWORD orig_func, DWORD func_len)
@@ -593,14 +621,27 @@ private:
 				DWORD rel_addr = disasm.imm.imm32;
 				DWORD orig_call_instr = orig_func + (disasm_ptr - new_func);
 				DWORD orig_called_func = orig_call_instr + rel_addr + 5;
-				if (orig_called_func % 0x10 == 0) //functions aligned to 0x10 bytes
+				if (orig_called_func % 0x10 == 0 && test_function(orig_called_func)) //functions are aligned to 0x10 bytes
 				{
-					DWORD new_called_func = unprotect<DWORD>((BYTE*)orig_called_func);
-					DWORD new_rel_addr = new_called_func - disasm_ptr - 5;
-					memcpy((void*)(disasm_ptr + 1), &new_rel_addr, 4);
+					__try
+					{
+						DWORD new_called_func = unprotect((BYTE*)orig_called_func);
+						DWORD new_rel_addr = new_called_func - disasm_ptr - 5;
+						*(DWORD*)(disasm_ptr + 1) = new_rel_addr;
+					}
+					__except (EXCEPTION_EXECUTE_HANDLER)
+					{
+						//ignore it
+					}
 				}
 			}
 			disasm_ptr += disasm.len;
 		}
 	}
 };
+
+template <class T>
+static T retcheckBypass(T func)
+{
+	return (T)retcheck::unprotect((BYTE*)func);
+}
