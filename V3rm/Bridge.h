@@ -106,7 +106,7 @@ namespace Bridge
 		case LUA_TFUNCTION:
 			lua_pushvalue(L, index);
 			r_lua_pushnumber(rL, luaL_ref(L, LUA_REGISTRYINDEX));
-			r_lua_pushcclosure(rL, Bridge::int3breakpoints[0], 1);
+			r_lua_pushcclosure(rL, Bridge::int3breakpoints[0], 1, 0);
 			break;
 		case LUA_TTABLE:
 			lua_pushvalue(L, index);
@@ -127,7 +127,7 @@ namespace Bridge
 			if (!lua_isnil(L, -1))
 				r_lua_getfield(rL, LUA_REGISTRYINDEX, lua_tostring(L, -1));
 			else
-				r_lua_newuserdata(rL, 0);
+				r_lua_newuserdata(rL, 0, 0);
 			lua_pop(L, 1);
 			break;
 		default: break;
@@ -145,7 +145,7 @@ namespace Bridge
 			lua_pushnil(L);
 			break;
 		case R_LUA_TNUMBER:
-			lua_pushnumber(L, r_lua_tonumber(rL, index));
+			lua_pushnumber(L, r_lua_tonumber(rL, index, 0));
 			break;
 		case R_LUA_TBOOLEAN:
 			lua_pushboolean(L, r_lua_toboolean(rL, index));
@@ -277,7 +277,7 @@ namespace Bridge
 		lua_State* L = lua_newthread(m_L);
 		lua_settable(m_L, LUA_REGISTRYINDEX);
 
-		int key = r_lua_tonumber(rL, lua_upvalueindex(1));
+		int key = r_lua_tonumber(rL, lua_upvalueindex(1), 0);
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, key);
 
@@ -291,7 +291,7 @@ namespace Bridge
 		case LUA_YIELD:
 
 			r_lua_pushlightuserdata(m_rL, (void*)L);
-			r_lua_pushcclosure(m_rL, Bridge::int3breakpoints[1], 1);
+			r_lua_pushcclosure(m_rL, Bridge::int3breakpoints[1], 1, 0);
 			return -1;
 		case LUA_ERRRUN:
 				printf("RVX ROBLOX ERROR: %s\n", lua_tostring(L, -1));

@@ -261,11 +261,11 @@ namespace Memory {
 void gay()
 {
 	printf("axon is shit");
-	uintptr_t ScriptContextVFTable = x(0x1C284FC);
+	uintptr_t ScriptContextVFTable = x(0x1C49D48);
 	uintptr_t ScriptContext = Memory::Scan((char*)&ScriptContextVFTable);
 	DWORD v2 = ScriptContext;
 	DWORD v3 = 0;
-	m_rL = v2 + 56 * v3 + 172 ^ *(DWORD*)(v2 + 56 * v3 + 172);
+	m_rL = *(DWORD*)(v2 + 56 * v3 + 172) - (v2 + 56 * v3 + 172);
 	printf("%x08\n", m_rL);
 }
 

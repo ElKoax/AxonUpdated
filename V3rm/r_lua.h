@@ -1,14 +1,26 @@
 #pragma once
 #include <Windows.h>
-#include "globals.h"
-#include "memory.h"
-#include "retcheck.h"
+
 
 #define r_lua_tostring(rL,i)	r_lua_tolstring(rL, (i), NULL)
 #define r_lua_pop(rL,n)		r_lua_settop(rL, -(n)-1)
 #define r_lua_getglobal(rL,s)	r_lua_getfield(rL, LUA_GLOBALSINDEX, (s))
 #define r_lua_newtable(rL) r_lua_createtable(rL, 0, 0)
+#pragma once
+#define x(x) (x - 0x400000 + (DWORD)GetModuleHandleA(0))
 
+
+#define R_LUA_TNIL 0
+#define R_LUA_TLIGHTUSERDATA 2
+#define R_LUA_TNUMBER 3
+#define R_LUA_TBOOLEAN 1
+#define R_LUA_TSTRING 4
+#define R_LUA_TTHREAD 8
+#define R_LUA_TFUNCTION 5
+#define R_LUA_TTABLE 7
+#define R_LUA_TUSERDATA 6
+#define R_LUA_TPROTO 9
+#define R_LUA_TUPVALUE 10
 DWORD unprotect(DWORD addr)
 {
 	BYTE* tAddr = (BYTE*)addr;
@@ -65,129 +77,76 @@ DWORD unprotect(DWORD addr)
 
 	return (DWORD)nFunc;
 }
+#include "retcheck.h"
+typedef void(__cdecl* rgetfield)(DWORD rL, int idx, const char* k);
+rgetfield r_lua_getfield = (rgetfield)retcheckBypass(x(0x7c80a0));
 
-typedef void(__stdcall* rgetfield)(DWORD rL, int idx, const char *k);
-rgetfield r_lua_getfield = (rgetfield)unprotect(x(0x7bD630));
+typedef int(__cdecl* rboolean)(unsigned int, int);
+rboolean r_lua_pushboolean = (rboolean)(retcheckBypass(x(0x7c9080)));
 
-
-typedef char*(__fastcall* rtolstring)(DWORD rL, int idx, size_t *size);
-rtolstring r_lua_tolstring = (rtolstring)(unprotect(x(0x7bfe00)));
-
-
-typedef void(__cdecl* rsettop)(DWORD rL, int idx);
-rsettop r_lua_settop = (rsettop)(unprotect(x(0x7bfbc0)));
-
+typedef char* (__cdecl* rtolstring)(DWORD rL, int idx, size_t* size);
+rtolstring r_lua_tolstring = (rtolstring)(retcheckBypass(x(0x7ca9d0)));
 
 typedef bool(__cdecl* toboolean)(DWORD rL, bool idx);
-toboolean r_lua_toboolean = (toboolean)(x(0x7bfd40));
-
+toboolean r_lua_toboolean = (toboolean)(x(0x7ca910));
 
 typedef void(__fastcall* pushvalue)(DWORD rL, DWORD idx);
-pushvalue r_lua_pushvalue = (pushvalue)(unprotect(x(0x7bED30)));
+pushvalue r_lua_pushvalue = (pushvalue)(retcheckBypass(x(0x7c9730)));
 
+typedef double(__stdcall* pushnumber)(DWORD rL, double idx);
+pushnumber r_lua_pushnumber = (pushnumber)(retcheckBypass(x(0x7c9550)));
 
-typedef double(__cdecl* pushnumber)(DWORD rL, double idx);
-pushnumber r_lua_pushnumber = (pushnumber)(unprotect(x(0x7beb50)));
+typedef void(__fastcall* rpushstring)(DWORD rL, const char*);
+rpushstring r_lua_pushstring = (rpushstring)(x(0x7c95e0));
 
-
-typedef void(__cdecl* rpushstring)(DWORD rL, const char*);
-rpushstring r_lua_pushstring = (rpushstring)(x(0x7bEBD0));
-
-
-typedef int(__cdecl* pcall)(DWORD rL, DWORD, DWORD, DWORD);
-pcall r_lua_pcall = (pcall)(x(0x7be5a0));
-
-
-typedef void(__cdecl* pushnil)(DWORD);
-pushnil r_lua_pushnil = (pushnil)(unprotect(x(0x7bEAE0)));
-
+typedef int(__cdecl* rLua_pcall)(DWORD lst, int nargs, int nresults, int errfunc);
+rLua_pcall r_lua_pcall = (rLua_pcall)retcheckBypass(x(0x7c8fb0));
 
 typedef DWORD(__cdecl* next2)(DWORD rL, int idx);
-next2 r_lua_next = (next2)(retcheck::unprotect((BYTE*)(x(0x7bE2F0))));
+next2 r_lua_next = (next2)(retcheckBypass(x(0x7c8d10)));
 
+typedef double(__cdecl* rtonumber)(DWORD, int, int);
+rtonumber r_lua_tonumber = (rtonumber)(x(0x7cab00));
 
-typedef bool(__cdecl* rboolean)(unsigned int, bool);
-rboolean r_lua_pushboolean = (rboolean)(unprotect(x(0x7be670)));
+typedef void(__stdcall* rpushcclosure)(DWORD rL, int fn, int non, int a1);
+rpushcclosure r_lua_pushcclosure = (rpushcclosure)(retcheckBypass(x(0x7c9100)));
 
+typedef void(__cdecl* rcreatetable)(DWORD rL, int num, int fix);
+rcreatetable r_lua_createtable = (rcreatetable)(retcheckBypass(x(0x7c7c70)));
 
-double r_lua_tonumber(DWORD rL, int idx)
-{
-	return ((double(__cdecl*)(DWORD, int, int))x(0x7bff40))(rL, idx, 0);//Updated
-}
+typedef DWORD(__cdecl* rnewthread)(DWORD);
+rnewthread r_lua_newthread = (rnewthread)retcheckBypass(x(0x7c8ab0));
 
+typedef void* (__cdecl* rnewuserdata)(DWORD, size_t, int);
+rnewuserdata r_lua_newuserdata = (rnewuserdata)(retcheckBypass(x(0x7c8bf0)));
 
+typedef void(__cdecl* rrawgeti)(DWORD, DWORD, DWORD);
+rrawgeti r_lua_rawgeti = (rrawgeti)retcheckBypass(x(0x7c99e0));
 
-typedef void(__stdcall* rpushcclosure)(DWORD rL, int fn, int non);
-rpushcclosure r_lua_pushcclosure = (rpushcclosure)(retcheckBypass(x(0x7bE6F0)));//Updated
+typedef void* (__fastcall* rgetmetatable)(DWORD rL, int idx);
+rgetmetatable r_lua_getmetatable = (rgetmetatable)(retcheckBypass(x(0x7c8430)));
 
+typedef int(__cdecl* rtouserdata)(DWORD, int);
+rtouserdata r_lua_touserdata = (rtouserdata)(retcheckBypass(x(0x7cac40)));
 
-typedef void(__cdecl *rcreatetable)(DWORD rL, int num, int fix);
-rcreatetable r_lua_createtable = (rcreatetable)(unprotect(x(0x7bD220)));
+typedef DWORD(__cdecl* rtype)(DWORD, int);
+rtype r_lua_type = (rtype)(x(0x7caca0));
 
+typedef void* (__cdecl* rsettable)(DWORD rL, int);
+rsettable r_lua_settable = (rsettable)(retcheckBypass(x(0x7ca700)));
 
-void* r_lua_newuserdata(DWORD rL, size_t size)//Updated
-{
-	return ((void* (__cdecl*)(DWORD rL, size_t size, int))unprotect(x(0x7bE1D0)))(rL, size, 0);
-}
+typedef DWORD(__cdecl* rref)(DWORD, DWORD);
+rref r_luaL_ref = (rref)(retcheckBypass(x(0x7c3180)));
 
+typedef int(__cdecl* gettop)(DWORD);
+gettop r_lua_gettop = (gettop)(x(0x7c86a0));
 
-typedef void*(__stdcall *rgetmetatable)(DWORD rL, int idx);
-rgetmetatable r_lua_getmetatable = (rgetmetatable)(unprotect(x(0x7bD9C0)));
+typedef void(__stdcall* rsettop)(DWORD rL, int idx);
+rsettop r_lua_settop = (rsettop)(retcheckBypass(x(0x7ca790)));
 
+typedef void(__cdecl* pushnil)(DWORD);
+pushnil r_lua_pushnil = (pushnil)(retcheckBypass(x(0x7c94e0)));
 
-typedef void*(__cdecl *rsettable)(DWORD rL, int);
-rsettable r_lua_settable = (rsettable)(unprotect(x(0x7bFB30)));
-
-
-typedef DWORD(__cdecl *rtype)(DWORD, int);
-rtype r_lua_type = (rtype)((retcheck::unprotect((BYTE*)(x(0x7c00e0)))));
-
-
-typedef DWORD(__cdecl *rnewthread)(DWORD);
-rnewthread r_lua_newthread = (rnewthread)unprotect(x(0x7bE090));
-
-
-typedef DWORD(__cdecl *rref)(DWORD, DWORD);
-rref r_luaL_ref = (rref)((retcheck::unprotect((BYTE*)(x(0x7b8700)))));
-
-
-typedef void(__cdecl *rrawgeti)(DWORD, DWORD, DWORD);
-rrawgeti r_lua_rawgeti = (rrawgeti)unprotect(x(0x7beff0));
-
-
-typedef int(__cdecl *gettop)(DWORD);
-gettop r_lua_gettop = (gettop)(x(0x7bDC40));
-
-
-typedef void(__cdecl *rpushlight)(DWORD, void*);
-rpushlight r_lua_pushlightuserdata = (rpushlight)(unprotect(x(0x7bE9C0)));
-
-
-typedef void*(__cdecl *touserdata)(DWORD, int);
-touserdata r_lua_touserdata =(touserdata)retcheckBypass(x(0x7c0080));
-
-/*
-Sehchainfaker
-Eternals sehchain fixed for windows7, windows 8,...
-*/
-void fakeChain(DWORD* chain)
-{
-	chain[1] = 0x1555555;
-	if ((((DWORD*)chain[0])[1]) != NULL) {
-		((DWORD*)chain[0])[1] = 0x1555555;
-	}
-}
-void restoreChain(DWORD* chain, DWORD unk, DWORD nextUnk)
-{
-	chain[1] = unk;
-	if ((((DWORD*)chain[0])[1]) != NULL) {
-		((DWORD*)chain[0])[1] = nextUnk;
-	}
-}
-
-/*
-r_lua_pcall
-r_lua_pcall we use this to see what error roblox returns if it returns the error we want we put a breakpoint on it
-and rewrite it to our own functions sadly r_lua_pcall has a check sehchaincheck which i already bypassed!
-*/
+typedef void(__cdecl* rpushlight)(DWORD, void*);
+rpushlight r_lua_pushlightuserdata = (rpushlight)(retcheckBypass(x(0x7c93c0)));
 
