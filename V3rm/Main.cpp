@@ -60,8 +60,8 @@ static int UserDataGC(lua_State *Thread) {
 }
 void Executeee(std::string Script) {
 	// script=Instance.new('LocalScript') script.Name = 'KEKE' \r\n"
-	//Script = "spawn(function()" + Script + "\r\nend)";
-	//Script = "script=Instance.new('LocalScript') script.Name = 'Kek' \r\n";
+	Script = "spawn(function() script=Instance.new(\"LocalScript\") " + Script + "\r\nend)";
+
 
 	if (luaL_loadstring(m_L, Script.c_str()))
 		printf("Error: %s\n", lua_tostring(m_L, -1));
@@ -112,7 +112,7 @@ DWORD WINAPI input(PVOID lvpParameter)
 	HANDLE hPipe;
 	char buffer[999999];
 	DWORD dwRead;
-	hPipe = CreateNamedPipe(TEXT("\\\\.\\pipe\\Axon"),
+	hPipe = CreateNamedPipe(TEXT("\\\\.\\pipe\\MadShitterCunt"),
 		PIPE_ACCESS_DUPLEX | PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
 		PIPE_WAIT,
 		1,
@@ -261,11 +261,12 @@ namespace Memory {
 void gay()
 {
 	printf("axon is shit");
-	uintptr_t ScriptContextVFTable = x(0x1C49D48);
+	uintptr_t ScriptContextVFTable = x(0x1A28080);
 	uintptr_t ScriptContext = Memory::Scan((char*)&ScriptContextVFTable);
 	DWORD v2 = ScriptContext;
 	DWORD v3 = 0;
-	m_rL = *(DWORD*)(v2 + 56 * v3 + 172) - (v2 + 56 * v3 + 172);
+	m_rL = *(DWORD*)(v2 + 56 * v3 + 164) - (v2 + 56 * v3 + 164);
+	*(DWORD*)(*(DWORD*)(m_rL + 112) + 24) = 6;
 	printf("%x08\n", m_rL);
 }
 
@@ -273,12 +274,9 @@ void gay()
 
 void main()
 {
-	ConsoleBypass("Axon ");
-	printf("Hooking To Gettop....\n");
-	// u need to write the luastate and scriptcontext bullshit
-	printf("Done Hooking Gettop!\n");
+	ConsoleBypass("Axon | Instance Caching ~~ Updated by ElKoax :tm:");
 	gay();
-		
+	
 	printf("YEET\n");
 	m_L = luaL_newstate();
 	printf("YEETED\n");
@@ -344,7 +342,13 @@ void main()
 	MessageBoxA(NULL, "OK!", "Loaded", MB_OK);
 //	MessageBoxA(NULL, "Credits to RoboMat for his hook", MB_OK);
 
-	MessageBoxA(NULL, "Credits to ElKoax/KoaxyBoy and ElKoax/KoaxyBoy again for the BANGING addies :DDD ", "Credits", MB_OK);
+	MessageBoxA(NULL, "Credits to ElKoax/KoaxyBoy and ElKoax/KoaxyBoy and XDumper again for the BANGING addies :DDD ", "Credits", MB_OK);
+	std::string urnan;
+	while (true)
+	{
+		std::getline(std::cin, urnan);
+		Executeee(urnan);
+	}
 }
 
 

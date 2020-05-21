@@ -1,35 +1,23 @@
 ﻿  Main.cpp
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\r_lua.h(14,1): warning C4005:  'R_LUA_TLIGHTUSERDATA': macro redefinition
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\globals.h(5): message :  see previous definition of 'R_LUA_TLIGHTUSERDATA'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\r_lua.h(15,1): warning C4005:  'R_LUA_TNUMBER': macro redefinition
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\globals.h(6): message :  see previous definition of 'R_LUA_TNUMBER'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\r_lua.h(18,1): warning C4005:  'R_LUA_TTHREAD': macro redefinition
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\globals.h(9): message :  see previous definition of 'R_LUA_TTHREAD'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\r_lua.h(19,1): warning C4005:  'R_LUA_TFUNCTION': macro redefinition
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\globals.h(10): message :  see previous definition of 'R_LUA_TFUNCTION'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\r_lua.h(20,1): warning C4005:  'R_LUA_TTABLE': macro redefinition
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\globals.h(11): message :  see previous definition of 'R_LUA_TTABLE'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\r_lua.h(21,1): warning C4005:  'R_LUA_TUSERDATA': macro redefinition
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\globals.h(12): message :  see previous definition of 'R_LUA_TUSERDATA'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,32): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,32): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,38): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,38): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,44): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,44): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,50): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,50): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,56): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,56): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,62): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,62): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,68): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,68): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,74): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(66,74): warning C4309:  'initializing': truncation of constant value
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(231,11): warning C4244:  'initializing': conversion from 'lua_Number' to 'int', possible loss of data
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(240,31): warning C4002:  too many arguments for function-like macro invocation 'r_lua_tostring'
-C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(280,11): warning C4244:  'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,32): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,32): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,38): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,38): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,44): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,44): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,50): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,50): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,56): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,56): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,62): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,62): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,68): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,68): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,74): warning C4838:  conversion from 'int' to 'const char' requires a narrowing conversion
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(71,74): warning C4309:  'initializing': truncation of constant value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(241,11): warning C4244:  'initializing': conversion from 'lua_Number' to 'int', possible loss of data
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(250,31): warning C4002:  too many arguments for function-like macro invocation 'r_lua_tostring'
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Bridge.h(290,11): warning C4244:  'initializing': conversion from 'double' to 'int', possible loss of data
 C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Main.cpp(217,1): warning C4996:  'freopen': This function or variable may be unsafe. Consider using freopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\ucrt\stdio.h(243): message :  see declaration of 'freopen'
 C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Main.cpp(218,1): warning C4996:  'freopen': This function or variable may be unsafe. Consider using freopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.

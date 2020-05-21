@@ -1,5 +1,4 @@
 #pragma once
-#include "globals.h"
 #include <string>
 #include <vector>
 #include "r_lua.h"
@@ -12,7 +11,13 @@ extern "C" {
 #include "Lua\llimits.h"
 }
 
+#include <unordered_map>
 
+
+struct Userdata
+{
+	int32_t reference;
+};
 
 int registry;
 
@@ -106,7 +111,7 @@ namespace Bridge
 		case LUA_TFUNCTION:
 			lua_pushvalue(L, index);
 			r_lua_pushnumber(rL, luaL_ref(L, LUA_REGISTRYINDEX));
-			r_lua_pushcclosure(rL, Bridge::int3breakpoints[0], 1, 0);
+			r_lua_pushcclosure(rL, int3breakpoints[0], NULL, 1, NULL);
 			break;
 		case LUA_TTABLE:
 			lua_pushvalue(L, index);
@@ -122,13 +127,13 @@ namespace Bridge
 			lua_pop(L, 1);
 			break;
 		case LUA_TUSERDATA:
-			lua_pushvalue(L, index);
-			lua_gettable(L, LUA_REGISTRYINDEX);
-			if (!lua_isnil(L, -1))
-				r_lua_getfield(rL, LUA_REGISTRYINDEX, lua_tostring(L, -1));
-			else
+			r_lua_rawgeti(rL, -10000, reinterpret_cast<Userdata*>(lua_touserdata(L, index))->reference);
+			if (!r_lua_type(rL, -1))
+			{
+				r_lua_settop(rL, -2);
 				r_lua_newuserdata(rL, 0, 0);
-			lua_pop(L, 1);
+			}
+
 			break;
 		default: break;
 		}
@@ -175,24 +180,29 @@ namespace Bridge
 			r_lua_pop(rL, 1);
 			break;
 		case R_LUA_TUSERDATA:
-			r_lua_pushvalue(rL, index);
-			r_lua_pushstring(rL, std::to_string(++registry).c_str());
+			uintptr_t rawInstancePtr = r_lua_touserdata(rL, index);
 
-			r_lua_pushvalue(rL, -2);
-			r_lua_settable(rL, LUA_REGISTRYINDEX);
-			r_lua_pop(rL, 1);
-			lua_newuserdata(L, 0);
-			lua_pushvalue(L, -1);
-			lua_pushstring(L, std::to_string(registry).c_str());
-			lua_settable(L, LUA_REGISTRYINDEX);
-			r_lua_getmetatable(rL, index);
+			lua_rawgeti(L, LUA_REGISTRYINDEX, rawInstancePtr);
 
-			Bridge::push(rL, L, -1);
-			r_lua_pop(rL, 1);
-			lua_setmetatable(L, -2);
+			if (!lua_type(L, -1))
+			{
+				lua_settop(L, -2);
+
+				r_lua_pushvalue(rL, index);
+				reinterpret_cast<Userdata*>(lua_newuserdata(L, sizeof(Userdata)))->reference = r_luaL_ref(rL, -10000);
+
+				r_lua_getmetatable(rL, index);
+				Bridge::push(rL, L, -1);
+				lua_setmetatable(L, -2);
+
+				lua_pushvalue(L, -1);
+				lua_rawseti(L, -10000, rawInstancePtr);
+
+				r_lua_settop(rL, -2);
+			}
 			break;
-		default: break;
 		}
+
 	}
 
 	static int resume(lua_State* thread)
@@ -291,7 +301,8 @@ namespace Bridge
 		case LUA_YIELD:
 
 			r_lua_pushlightuserdata(m_rL, (void*)L);
-			r_lua_pushcclosure(m_rL, Bridge::int3breakpoints[1], 1, 0);
+			r_lua_pushcclosure(m_rL, int3breakpoints[1], NULL, 1, NULL);
+
 			return -1;
 		case LUA_ERRRUN:
 				printf("RVX ROBLOX ERROR: %s\n", lua_tostring(L, -1));
