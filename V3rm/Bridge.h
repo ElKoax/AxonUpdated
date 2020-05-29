@@ -37,10 +37,98 @@ namespace Bridge
 	int resumea(DWORD thread);
 }
 
+#include <Windows.h>
+#include <WinINet.h>
+#include <string>
+#include <WinInet.h>
 
+#pragma comment(lib, "wininet") 
+
+using namespace std;
+
+
+
+
+std::string replaceAll(std::string subject, const std::string& search,
+	const std::string& replace) {
+	size_t pos = 0;
+	while ((pos = subject.find(search, pos)) != std::string::npos) {
+		subject.replace(pos, search.length(), replace);
+		pos += replace.length();
+	}
+	return subject;
+}
+
+std::string DownloadURL(const char* URL) {
+	HINTERNET interwebs = InternetOpenA("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
+	HINTERNET urlFile;
+	std::string rtn;
+	if (interwebs) {
+		urlFile = InternetOpenUrlA(interwebs, URL, NULL, NULL, NULL, NULL);
+		if (urlFile) {
+			char buffer[2000];
+			DWORD bytesRead;
+			do {
+				InternetReadFile(urlFile, buffer, 2000, &bytesRead);
+				rtn.append(buffer, bytesRead);
+				memset(buffer, 0, 2000);
+			} while (bytesRead);
+			InternetCloseHandle(interwebs);
+			InternetCloseHandle(urlFile);
+			std::string p = replaceAll(rtn, "|n", "\r\n");
+			return p;
+		}
+	}
+	InternetCloseHandle(interwebs);
+	std::string p = replaceAll(rtn, "|n", "\r\n");
+	return p;
+}
 
 namespace Bridge
 {
+
+
+	static int DownloadString(lua_State* L) {
+		int args = lua_gettop(L) - 1;
+		std::string url;
+		if (args == 2) {
+			url = DownloadURL(lua_tostring(L, -2));
+		}
+		else {
+			url = DownloadURL(lua_tostring(L, -1));
+		}
+		lua_pushstring(L, url.c_str());
+		return 1;
+	}
+
+
+	static int GetObjects(lua_State* L) {
+		auto asset = lua_tostring(L, -1);
+		auto hold = std::string("return {game:GetService('InsertService'):LoadLocalAsset('") + std::string(asset) + std::string("')}");
+		luaL_dostring(L, hold.c_str());
+		return 1;
+	}
+	int IndexYeet(lua_State* L) {
+		const char* key = lua_tostring(L, -1);
+		//std::cout << key << std::endl;
+		if (key == std::string("HttpGet")) {
+			lua_pushcfunction(L, DownloadString);
+		}
+		else if (key == std::string("GetObjects")) {
+			lua_pushcfunction(L, GetObjects);
+		}
+
+		else
+		{
+			//DebugOutput("Index Key: ", key);
+			push(L, m_rL, 1);
+			r_lua_getfield(m_rL, -1, key);
+			push(m_rL, L, -1);
+			//r_lua_settop(RLS, -2);
+		}
+		return 1;
+	}
+
 
 	LONG WINAPI vehHandler(PEXCEPTION_POINTERS ex)
 	{
@@ -181,25 +269,23 @@ namespace Bridge
 			break;
 		case R_LUA_TUSERDATA:
 			uintptr_t rawInstancePtr = r_lua_touserdata(rL, index);
-
 			lua_rawgeti(L, LUA_REGISTRYINDEX, rawInstancePtr);
-
 			if (!lua_type(L, -1))
 			{
 				lua_settop(L, -2);
-
 				r_lua_pushvalue(rL, index);
 				reinterpret_cast<Userdata*>(lua_newuserdata(L, sizeof(Userdata)))->reference = r_luaL_ref(rL, -10000);
-
 				r_lua_getmetatable(rL, index);
 				Bridge::push(rL, L, -1);
+				lua_pushcfunction(L, IndexYeet);
+				lua_setfield(L, -2, "__index");
 				lua_setmetatable(L, -2);
-
 				lua_pushvalue(L, -1);
 				lua_rawseti(L, -10000, rawInstancePtr);
 
 				r_lua_settop(rL, -2);
 			}
+			
 			break;
 		}
 
@@ -262,8 +348,8 @@ namespace Bridge
 
 				return lua_yield(L, 0);
 			}
-			//printf("RVX VANILLA ERROR: %s\n", r_lua_tostring(rL, -1));
-			return 0;
+			//r_luaL_error(m_rL, lua_tostring(L, -1));
+			return luaL_error(L, errormessage);
 			//MessageBoxA(NULL, "SUCCESS VANILLA", "vanillabridge", NULL);
 			delete[] errormessage;
 		}
@@ -305,7 +391,8 @@ namespace Bridge
 
 			return -1;
 		case LUA_ERRRUN:
-				printf("RVX ROBLOX ERROR: %s\n", lua_tostring(L, -1));
+				//printf("RVX ROBLOX ERROR: %s\n", lua_tostring(L, -1));
+			    r_luaL_error(rL, luaL_checkstring(L, -1));
 				return -1;
 		default: break;
 		}

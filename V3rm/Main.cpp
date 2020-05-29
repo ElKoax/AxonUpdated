@@ -26,15 +26,10 @@ DWORD ScriptContextVFTable = x(0x187CBD0);
 using Bridge::m_rL;
 using Bridge::m_L;
 
-void PushGlobal(DWORD rL, lua_State* L, const char* s)
-{
-	r_lua_getglobal(rL, s);
-	Bridge::push(rL, L, -1);
-	lua_setglobal(L, s);
-	r_lua_pop(rL, 1);
-}
+
 
 using namespace std;
+
 std::string replace_all(std::string subject, const std::string& search, const std::string& replace) {
 	size_t pos = 0;
 	while ((pos = subject.find(search, pos)) != std::string::npos) {
@@ -58,52 +53,30 @@ static int UserDataGC(lua_State *Thread) {
 	}
 	return 0;
 }
+
 void Executeee(std::string Script) {
 	// script=Instance.new('LocalScript') script.Name = 'KEKE' \r\n"
 	Script = "spawn(function() script=Instance.new(\"LocalScript\") " + Script + "\r\nend)";
 
 
-	if (luaL_loadstring(m_L, Script.c_str()))
-		printf("Error: %s\n", lua_tostring(m_L, -1));
+	if (luaL_loadbuffer(m_L, Script.c_str(), Script.size(), "@Axon"))
+	{
+		//r_luaL_error(m_rL, lua_tostring(m_L, -1));
+		r_lua_getglobal(m_rL, "warn");
+		r_lua_pushstring(m_rL, lua_tostring(m_L, -1));
+		r_lua_pcall(m_rL, 1, 0, 0);
+		return;
+	}
+		//r_luaL_error(m_rL, lua_tostring(m_L, -1));
 	else
+	{
 		lua_pcall(m_L, 0, 0, 0);
-
+	}
 	UserDataGC(m_L);
+	
 }
 
 
-namespace Memory {
-	///////////////
-	// ScriptContext Scanner, Pretty Damn Fast
-	// Credits To Whoever Made It (I Believe It Was Louka Or Rakion99)
-	///////////////
-
-	bool compare(BYTE* address, BYTE* pattern, BYTE* mask) {
-		for (; *mask; address++, pattern++, mask++) {
-			if (*mask == 'x' && *address != *pattern) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	DWORD Scan(BYTE* aob, BYTE* mask, BYTE prot = (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) {
-		MEMORY_BASIC_INFORMATION mbi;
-		DWORD j = (DWORD)GetModuleHandle(NULL);
-		while (j < 0x7FFFFFFF && VirtualQuery((void*)j, &mbi, sizeof(mbi))) {
-			if (!(mbi.Protect & PAGE_GUARD) && (mbi.State & MEM_COMMIT) && (mbi.Protect & prot)) {
-				for (DWORD k = (DWORD)mbi.BaseAddress; k < ((DWORD)mbi.BaseAddress + mbi.RegionSize); ++k) {
-					if (compare((BYTE*)k, (BYTE*)aob, (BYTE*)mask)) {
-						return k;
-					}
-				}
-			}
-			j += mbi.RegionSize;
-		}
-		return 0;
-	}
-	///////////////
-}
 
 
 DWORD WINAPI input(PVOID lvpParameter)
@@ -112,7 +85,7 @@ DWORD WINAPI input(PVOID lvpParameter)
 	HANDLE hPipe;
 	char buffer[999999];
 	DWORD dwRead;
-	hPipe = CreateNamedPipe(TEXT("\\\\.\\pipe\\MadShitterCunt"),
+	hPipe = CreateNamedPipe(TEXT("\\\\.\\pipe\\Axon"),
 		PIPE_ACCESS_DUPLEX | PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
 		PIPE_WAIT,
 		1,
@@ -154,41 +127,9 @@ DWORD WINAPI input(PVOID lvpParameter)
 }
 
 
-bool CompareData(const char* Data, const char* Pattern, const char* Mask) {
-	while (*Mask) {
-		if (*Mask != '?') {
-			if (*Data != *Pattern) {
-				return false;
-			};
-		};
-		++Mask;
-		++Data;
-		++Pattern;
-	};
-	return true;
-};
 
 
-DWORD ScanForScriptContext(const char* SCVFT_Offsetted) {
-	MEMORY_BASIC_INFORMATION BasicMemoryInformation = {};
-	SYSTEM_INFO SystemInformation = {};
-	GetSystemInfo(&SystemInformation);
-	DWORD StartingMemorySearchPosition = (DWORD)SystemInformation.lpMinimumApplicationAddress;
-	DWORD MaximumSearchBoundary = (DWORD)SystemInformation.lpMaximumApplicationAddress;
-	do {
-		while (VirtualQuery((void*)StartingMemorySearchPosition, &BasicMemoryInformation, sizeof(BasicMemoryInformation))) {
-			if ((BasicMemoryInformation.Protect & PAGE_READWRITE) && !(BasicMemoryInformation.Protect & PAGE_GUARD)) {
-				for (DWORD Key = (DWORD)(BasicMemoryInformation.BaseAddress); ((Key - (DWORD)(BasicMemoryInformation.BaseAddress) < BasicMemoryInformation.RegionSize)); ++Key) {
-					if (CompareData((const char*)Key, SCVFT_Offsetted, "xxxx")) {
-						return Key;
-					};
-				};
-			};
-			StartingMemorySearchPosition += BasicMemoryInformation.RegionSize;
-		};
-	} while (StartingMemorySearchPosition < MaximumSearchBoundary);
-	return 0x0;
-};
+
 
 int getRawMetaTable(lua_State *L) {
 	Bridge::push(L, m_rL, 1);
@@ -221,53 +162,80 @@ void ConsoleBypass(const char* Title) {
 	::ShowWindow(ConsoleHandle, SW_NORMAL);
 }
 
+int GDM;
 
-namespace Memory {
+typedef DWORD(__cdecl* gdm2)();
+gdm2 getdatamodel2 = (gdm2)(x(0xE418F0));
 
-	bool Compare(const char* pData, const char* bMask, const char* szMask)
+
+typedef DWORD(__thiscall* getdatamodel)(DWORD, DWORD);
+getdatamodel r_getdatamodel = (getdatamodel)(x(0xE41A40));
+
+int GetDatamodel()
+{
+	volatile DWORD StackPad[16]{};
+	static DWORD DMPad[16]{}; 
+	r_getdatamodel(getdatamodel2(), (DWORD)DMPad);
+	DWORD DM = DMPad[0];
+	return DM + 0x44;
+	/*
+	GetDataModel, Fixed by Shade and Synapse X source code i guess? xD enjoy this.
+	*/
+}
+
+const char* GetClass(int self)
+{
+	return (const char*)(*(int(**)(void))(*(int*)self + 16))();
+}
+
+int FindFirstClass(int Instance, const char* Name)
+{
+	DWORD StartOfChildren = *(DWORD*)(Instance + 0x2C);
+	DWORD EndOfChildren = *(DWORD*)(StartOfChildren + 4);
+
+	for (int i = *(int*)StartOfChildren; i != EndOfChildren; i += 8)
 	{
-		while (*szMask) {
-			if (*szMask != '?') {
-				if (*pData != *bMask) return 0;
-			}
-			++szMask, ++pData, ++bMask;
+		if (memcmp(GetClass(*(int*)i), Name, strlen(Name)) == 0)
+		{
+			return *(int*)i;
 		}
-		return 1;
-	}
-
-	DWORD Scan(const char* vftable)  // Credits goes to tepig
-	{
-		MEMORY_BASIC_INFORMATION BasicMemoryInformation = {};
-		SYSTEM_INFO SystemInformation = {};
-		GetSystemInfo(&SystemInformation);
-		DWORD StartingMemorySearchPosition = (DWORD)SystemInformation.lpMinimumApplicationAddress;
-		DWORD MaximumSearchBoundary = (DWORD)SystemInformation.lpMaximumApplicationAddress;
-		do {
-			while (VirtualQuery((void*)StartingMemorySearchPosition, &BasicMemoryInformation, sizeof(BasicMemoryInformation))) {
-				if ((BasicMemoryInformation.Protect & PAGE_READWRITE) && !(BasicMemoryInformation.Protect & PAGE_GUARD)) {
-					for (DWORD Key = (DWORD)(BasicMemoryInformation.BaseAddress); ((Key - (DWORD)(BasicMemoryInformation.BaseAddress) < BasicMemoryInformation.RegionSize)); ++Key) {
-						if (Compare((const char*)Key, vftable, "xxxx")) {
-							return Key;
-						};
-					};
-				};
-				StartingMemorySearchPosition += BasicMemoryInformation.RegionSize;
-			};
-		} while (StartingMemorySearchPosition < MaximumSearchBoundary);
-		return 0x0;
 	}
 }
 
-void gay()
+
+
+void getdatamodeltesting()
 {
-	printf("axon is shit");
-	uintptr_t ScriptContextVFTable = x(0x1A28080);
-	uintptr_t ScriptContext = Memory::Scan((char*)&ScriptContextVFTable);
-	DWORD v2 = ScriptContext;
-	DWORD v3 = 0;
-	m_rL = *(DWORD*)(v2 + 56 * v3 + 164) - (v2 + 56 * v3 + 164);
+	GDM = GetDatamodel();
+	printf("GDM: (%x08)\n", GDM);
+	ScriptContext = FindFirstClass(GDM, "ScriptContext");
+	printf("Ha! yes done! \n");
+	m_rL = (ScriptContext + 56 * 0 + 164) - *(DWORD*)(ScriptContext + 56 * 0 + 164);
 	*(DWORD*)(*(DWORD*)(m_rL + 112) + 24) = 6;
-	printf("%x08\n", m_rL);
+	printf("Done! :3 \n");
+}
+
+
+void InitGlobals()
+{
+	std::vector<const char*> Globals = {
+    "printidentity","game","Game","workspace","Workspace",
+    "Axes","BrickColor","CFrame","Color3","ColorSequence","ColorSequenceKeypoint",
+    "NumberRange","NumberSequence","NumberSequenceKeypoint","PhysicalProperties","Ray",
+    "Rect","Region3","Region3int16","TweenInfo","UDim","UDim2","Vector2",
+    "Vector2int16","Vector3","Vector3int16","Enum","Faces",
+    "Instance","math","warn","typeof","type","print",
+    "printidentity","ypcall","Wait","wait","delay","Delay","tick", "pcall", "spawn", "Spawn"
+	};
+	for (int i = 0; i < Globals.size(); i++)
+	{
+		r_lua_getglobal(m_rL, Globals[i]);
+		Bridge::push(m_rL, m_L, -1);
+		lua_setglobal(m_L, Globals[i]);
+		r_lua_pop(m_rL, 1);
+		std::cout << "WRAPPED GLOBAL: " << Globals[i] << std::endl;
+	}
+	printf("Globals Have been sucessfully wrapped!\n");
 }
 
 
@@ -275,73 +243,18 @@ void gay()
 void main()
 {
 	ConsoleBypass("Axon | Instance Caching ~~ Updated by ElKoax :tm:");
-	gay();
-	
-	printf("YEET\n");
+	getdatamodeltesting();
+
 	m_L = luaL_newstate();
-	printf("YEETED\n");
 	Bridge::VehHandlerpush();
-	printf("YEET\n");
 	luaL_openlibs(m_L);
-	luaL_newmetatable(m_L, "garbagecollector");
-	lua_pushcfunction(m_L, UserDataGC);
-	lua_setfield(m_L, -2, "__gc");
-	lua_pushvalue(m_L, -1);
-	lua_setfield(m_L, -2, "__index");
-	PushGlobal(m_rL, m_L, "game");
-	PushGlobal(m_rL, m_L, "Game");
-	PushGlobal(m_rL, m_L, "workspace");
-	PushGlobal(m_rL, m_L, "Workspace");
-	PushGlobal(m_rL, m_L, "Axes");
-	PushGlobal(m_rL, m_L, "BrickColor");
-	PushGlobal(m_rL, m_L, "CFrame");
-	PushGlobal(m_rL, m_L, "Color3");
-	PushGlobal(m_rL, m_L, "ColorSequence");
-	PushGlobal(m_rL, m_L, "ColorSequenceKeypoint");
-	PushGlobal(m_rL, m_L, "NumberRange");
-	PushGlobal(m_rL, m_L, "NumberSequence");
-	PushGlobal(m_rL, m_L, "NumberSequenceKeypoint");
-	PushGlobal(m_rL, m_L, "PhysicalProperties");
-	PushGlobal(m_rL, m_L, "Ray");
-	PushGlobal(m_rL, m_L, "Rect");
-	PushGlobal(m_rL, m_L, "Region3");
-	PushGlobal(m_rL, m_L, "Region3int16");
-	PushGlobal(m_rL, m_L, "TweenInfo");
-	PushGlobal(m_rL, m_L, "UDim");
-	PushGlobal(m_rL, m_L, "UDim2");
-	PushGlobal(m_rL, m_L, "Vector2");
-	PushGlobal(m_rL, m_L, "Vector2int16");
-	PushGlobal(m_rL, m_L, "Vector3");
-	PushGlobal(m_rL, m_L, "Vector3int16");
-	PushGlobal(m_rL, m_L, "Enum");
-	PushGlobal(m_rL, m_L, "Faces");
-	PushGlobal(m_rL, m_L, "Instance");
-	PushGlobal(m_rL, m_L, "math");
-	PushGlobal(m_rL, m_L, "warn");
-	PushGlobal(m_rL, m_L, "typeof");
-	PushGlobal(m_rL, m_L, "type");
-	PushGlobal(m_rL, m_L, "spawn");
-	PushGlobal(m_rL, m_L, "Spawn");
-	PushGlobal(m_rL, m_L, "print");
-	PushGlobal(m_rL, m_L, "printidentity");
-	PushGlobal(m_rL, m_L, "ypcall");
-	PushGlobal(m_rL, m_L, "Wait");
-	PushGlobal(m_rL, m_L, "wait");
-	PushGlobal(m_rL, m_L, "delay");
-	PushGlobal(m_rL, m_L, "Delay");
-	PushGlobal(m_rL, m_L, "tick");
-	PushGlobal(m_rL, m_L, "LoadLibrary");
-	printf("Globals Have been sucessfully wrapped!\n");
+	InitGlobals();
 	lua_register(m_L, "getrawmetatable", getRawMetaTable);
 	lua_newtable(m_L);
 	lua_setglobal(m_L, "_G");
 	printf("YEETED ON FUNCTIONS\n");
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)input, NULL, NULL, NULL);
-	printf("RVX INJECTED!\n");
-//	luaL_dostring(m_L, "script=Instance.new('LocalScript') script.Name = 'GayAxon' \r\n");
-	MessageBoxA(NULL, "OK!", "Loaded", MB_OK);
-//	MessageBoxA(NULL, "Credits to RoboMat for his hook", MB_OK);
-
+	printf("AXON INJECTED!\n");
 	MessageBoxA(NULL, "Credits to ElKoax/KoaxyBoy and ElKoax/KoaxyBoy and XDumper again for the BANGING addies :DDD ", "Credits", MB_OK);
 	std::string urnan;
 	while (true)

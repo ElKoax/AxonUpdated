@@ -23,4 +23,5 @@ C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\ucrt\stdio.h(243): m
 C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Main.cpp(218,1): warning C4996:  'freopen': This function or variable may be unsafe. Consider using freopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\ucrt\stdio.h(243): message :  see declaration of 'freopen'
 C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Main.cpp(154): warning C4715:  'input': not all control paths return a value
+C:\Users\zakar\Documents\GitHub\AxonUpdated\V3rm\Main.cpp(288): warning C4715:  'FindFirstClass': not all control paths return a value
   V3rm.vcxproj -> C:\Users\zakar\Documents\GitHub\AxonUpdated\Debug\Axon.dll
