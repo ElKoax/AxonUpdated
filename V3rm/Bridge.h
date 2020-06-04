@@ -13,6 +13,8 @@ extern "C" {
 
 #include <unordered_map>
 
+#define AXONDEBUG false
+
 
 struct Userdata
 {
@@ -82,6 +84,21 @@ std::string DownloadURL(const char* URL) {
 	InternetCloseHandle(interwebs);
 	std::string p = replaceAll(rtn, "|n", "\r\n");
 	return p;
+}
+
+
+static int UserDataGC(lua_State* Thread) {
+	void* UD = lua_touserdata(Thread, 1);
+	if (Bridge::m_rL) {
+
+		r_lua_rawgeti(Bridge::m_rL, LUA_REGISTRYINDEX, (int)UD);
+		if (r_lua_type(Bridge::m_rL, -1) <= R_LUA_TNIL) {
+			lua_pushnil(Thread);
+			lua_rawseti(Thread, LUA_REGISTRYINDEX, (int)UD);
+
+		}
+	}
+	return 0;
 }
 
 namespace Bridge
@@ -174,6 +191,11 @@ namespace Bridge
 
 	void push(lua_State* L, DWORD rL, int index)
 	{
+       #if AXONDEBUG
+		printf("[AXON DEBUG] ROBLOX WRAP: %d\n", lua_type(L, index));
+       #endif 
+
+
 		//printf("ROBLOX: %d\n", lua_type(L, index));
 		switch (lua_type(L, index))
 		{
@@ -228,6 +250,9 @@ namespace Bridge
 	}
 	void push(DWORD rL, lua_State* L, int index)
 	{
+        #if  AXONDEBUG
+		printf("[DEBUG AXON] VANILLA WRAP: %d\r\n", r_lua_type(rL, index));
+        #endif  
 		//printf("VANILLA: %d\r\n", r_lua_type(rL, index));
 		switch (r_lua_type(rL, index))
 		{
@@ -279,6 +304,8 @@ namespace Bridge
 				Bridge::push(rL, L, -1);
 				lua_pushcfunction(L, IndexYeet);
 				lua_setfield(L, -2, "__index");
+				lua_pushcfunction(L, UserDataGC);
+				lua_setfield(L, -2, "__gc");
 				lua_setmetatable(L, -2);
 				lua_pushvalue(L, -1);
 				lua_rawseti(L, -10000, rawInstancePtr);

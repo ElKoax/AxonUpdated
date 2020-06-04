@@ -40,19 +40,6 @@ std::string replace_all(std::string subject, const std::string& search, const st
 }
 
 
-static int UserDataGC(lua_State *Thread) {
-	void *UD = lua_touserdata(Thread, 1);
-	if (m_rL) {
-
-		r_lua_rawgeti(m_rL, LUA_REGISTRYINDEX, (int)UD);
-		if (r_lua_type(m_rL, -1) <= R_LUA_TNIL) {
-			lua_pushnil(Thread);
-			lua_rawseti(Thread, LUA_REGISTRYINDEX, (int)UD);
-
-		}
-	}
-	return 0;
-}
 
 void Executeee(std::string Script) {
 	// script=Instance.new('LocalScript') script.Name = 'KEKE' \r\n"
@@ -162,15 +149,6 @@ void ConsoleBypass(const char* Title) {
 	::ShowWindow(ConsoleHandle, SW_NORMAL);
 }
 
-int GDM;
-
-typedef DWORD(__cdecl* gdm2)();
-gdm2 getdatamodel2 = (gdm2)(x(0xE418F0));
-
-
-typedef DWORD(__thiscall* getdatamodel)(DWORD, DWORD);
-getdatamodel r_getdatamodel = (getdatamodel)(x(0xE41A40));
-
 int GetDatamodel()
 {
 	volatile DWORD StackPad[16]{};
@@ -210,8 +188,8 @@ void getdatamodeltesting()
 	printf("GDM: (%x08)\n", GDM);
 	ScriptContext = FindFirstClass(GDM, "ScriptContext");
 	printf("Ha! yes done! \n");
-	m_rL = (ScriptContext + 56 * 0 + 164) - *(DWORD*)(ScriptContext + 56 * 0 + 164);
-	*(DWORD*)(*(DWORD*)(m_rL + 112) + 24) = 6;
+	m_rL = *(DWORD*)(ScriptContext + 0xA4) - (ScriptContext + 0xA4);
+	*(DWORD*)(*(DWORD*)(m_rL + 0x70) + 0x18) = 6;
 	printf("Done! :3 \n");
 }
 
