@@ -151,11 +151,13 @@ void ConsoleBypass(const char* Title) {
 
 int GetDatamodel()
 {
-	volatile DWORD StackPad[16]{};
 	static DWORD DMPad[16]{}; 
+	printf("GETDATAMODEL \n");
 	r_getdatamodel(getdatamodel2(), (DWORD)DMPad);
+	printf("GETDATAMODEL PASSED\n");
 	DWORD DM = DMPad[0];
-	return DM + 0x44;
+	printf("RETURNING DM!! \n");
+	return DM + 12;
 	/*
 	GetDataModel, Fixed by Shade and Synapse X source code i guess? xD enjoy this.
 	*/
@@ -168,17 +170,27 @@ const char* GetClass(int self)
 
 int FindFirstClass(int Instance, const char* Name)
 {
-	DWORD StartOfChildren = *(DWORD*)(Instance + 0x2C);
-	DWORD EndOfChildren = *(DWORD*)(StartOfChildren + 4);
 
+	
+	DWORD StartOfChildren = *(DWORD*)(Instance + 44);
+	printf("START: (%x) \n", StartOfChildren);
+	DWORD EndOfChildren = *(DWORD*)(StartOfChildren + 4);
+	printf("END: (%x08) \n", EndOfChildren);
 	for (int i = *(int*)StartOfChildren; i != EndOfChildren; i += 8)
 	{
 		if (memcmp(GetClass(*(int*)i), Name, strlen(Name)) == 0)
 		{
+			printf("GOT CLASS!");
 			return *(int*)i;
 		}
 	}
 }
+
+DWORD OFF_FFC = 0x60D860;
+
+typedef int(__thiscall* findfirstchild)(DWORD rL, const std::string&);
+findfirstchild FindFirstChild_Bait = (findfirstchild)x(OFF_FFC);
+
 
 
 
@@ -187,10 +199,14 @@ void getdatamodeltesting()
 	GDM = GetDatamodel();
 	printf("GDM: (%x08)\n", GDM);
 	ScriptContext = FindFirstClass(GDM, "ScriptContext");
-	printf("Ha! yes done! \n");
-	m_rL = *(DWORD*)(ScriptContext + 0xA4) - (ScriptContext + 0xA4);
+	//ScriptContext = FindFirstChild_Bait(GDM, "Script Context");
+	
+	printf("ya cunt (%i)\n", ScriptContext);
+	
+	m_rL = ScriptContext + 56 * 0 + 164 + *(DWORD*)(ScriptContext + 56 * 0 + 164);
+
 	*(DWORD*)(*(DWORD*)(m_rL + 0x70) + 0x18) = 6;
-	printf("Done! :3 \n");
+	//printf("Done! :3 \n");
 }
 
 

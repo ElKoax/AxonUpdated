@@ -6,7 +6,7 @@ Updated by meeeeeeeee! and XDumper and ElKoax yes
 
 
 
-UPDATED!!!! YEEETETETTETETE 04/06/2020!
+UPDATED!!!! YEEETETETTETETE 10/06/2020!
 
 (happy almost half way through fucking gay ass 2020 :)! love ElKoax)
 
@@ -15,3 +15,9 @@ UPDATE: Added GetDataModel, now Handles error's correctly and too roblox's conso
 Also added HttpGet and GetObjects, look in the "Bridge.h" to look at what i did (Index Hooking)
 
 added __GC to the TUSERDATA, also updated
+
+wda
+wd
+a
+aw
+awddwa enjoy this was a pain.
