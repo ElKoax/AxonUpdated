@@ -200,5 +200,8 @@
     <ClInclude Include="retcheck.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Magic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

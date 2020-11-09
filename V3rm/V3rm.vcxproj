@@ -210,6 +210,7 @@
     <ClInclude Include="Lua\lundump.h" />
     <ClInclude Include="Lua\lvm.h" />
     <ClInclude Include="Lua\lzio.h" />
+    <ClInclude Include="Magic.h" />
     <ClInclude Include="memory.h" />
     <ClInclude Include="retcheck.h" />
     <ClInclude Include="r_lua.h" />

@@ -87,19 +87,36 @@ std::string DownloadURL(const char* URL) {
 }
 
 
-static int UserDataGC(lua_State* Thread) {
-	void* UD = lua_touserdata(Thread, 1);
-	if (Bridge::m_rL) {
+//static int UserDataGC(lua_State* Thread) {
+//	void* UD = lua_touserdata(Thread, 1);
+//	if (Bridge::m_rL) {
+//
+//		r_lua_rawgeti(Bridge::m_rL, LUA_REGISTRYINDEX, (int)UD);
+//		if (r_lua_type(Bridge::m_rL, -1) <= R_LUA_TNIL) {
+//			lua_pushnil(Thread);
+//			lua_rawseti(Thread, LUA_REGISTRYINDEX, (int)UD);
+//
+//		}
+//	}
+//	return 0;
+//}
 
-		r_lua_rawgeti(Bridge::m_rL, LUA_REGISTRYINDEX, (int)UD);
-		if (r_lua_type(Bridge::m_rL, -1) <= R_LUA_TNIL) {
-			lua_pushnil(Thread);
-			lua_rawseti(Thread, LUA_REGISTRYINDEX, (int)UD);
-
-		}
+static int GarbageCollector(lua_State* L) {
+	void* UD = lua_touserdata(L, 1);
+	lua_pushvalue(L, 1);
+	lua_gettable(L, LUA_REGISTRYINDEX);
+	if (!lua_isnil(L, -1)) {
+		int Reference = lua_tointeger(L, -1);
+		r_lua_pushnil(Bridge::m_rL);
+		r_lua_rawseti(Bridge::m_rL, LUA_REGISTRYINDEX, Reference);
+		r_lua_settop(Bridge::m_rL, 0);
+		MessageBox(0, "Gar Collected", "Collector", 0);
+		return 1;
 	}
+	lua_pop(L, 1);
 	return 0;
 }
+
 
 namespace Bridge
 {
@@ -129,6 +146,7 @@ namespace Bridge
 		const char* key = lua_tostring(L, -1);
 		//std::cout << key << std::endl;
 		if (key == std::string("HttpGet")) {
+			//lua_getglobal(L, "HttpGet");
 			lua_pushcfunction(L, DownloadString);
 		}
 		else if (key == std::string("GetObjects")) {
@@ -191,17 +209,12 @@ namespace Bridge
 
 	void push(lua_State* L, DWORD rL, int index)
 	{
-       #if AXONDEBUG
-		printf("[AXON DEBUG] ROBLOX WRAP: %d\n", lua_type(L, index));
-       #endif 
-
-
+      
 		//printf("ROBLOX: %d\n", lua_type(L, index));
 		switch (lua_type(L, index))
 		{
 		case LUA_TLIGHTUSERDATA:
 			r_lua_pushlightuserdata(rL, nullptr);
-
 			break;
 		case LUA_TNIL:
 			r_lua_pushnil(rL);
@@ -245,41 +258,45 @@ namespace Bridge
 			}
 
 			break;
-		default: break;
 		}
 	}
 	void push(DWORD rL, lua_State* L, int index)
 	{
-        #if  AXONDEBUG
-		printf("[DEBUG AXON] VANILLA WRAP: %d\r\n", r_lua_type(rL, index));
-        #endif  
-		//printf("VANILLA: %d\r\n", r_lua_type(rL, index));
-		switch (r_lua_type(rL, index))
+      
+		int RTType = r_lua_type(rL, index);
+
+		if (RTType == R_LUA_TLIGHTUSERDATA)
 		{
-		case R_LUA_TLIGHTUSERDATA:
 			lua_pushlightuserdata(L, nullptr);
-			break;
-		case R_LUA_TNIL:
+		}
+		if (RTType == R_LUA_TNIL)
+		{
 			lua_pushnil(L);
-			break;
-		case R_LUA_TNUMBER:
+		}
+		else if (RTType == R_LUA_TNUMBER)
+		{
 			lua_pushnumber(L, r_lua_tonumber(rL, index, 0));
-			break;
-		case R_LUA_TBOOLEAN:
+		}
+		else if (RTType == R_LUA_TBOOLEAN)
+		{
 			lua_pushboolean(L, r_lua_toboolean(rL, index));
-			break;
-		case R_LUA_TSTRING:
+		}
+		else if (RTType == R_LUA_TSTRING)
+		{
 			lua_pushstring(L, r_lua_tostring(rL, index));
-			break;
-		case R_LUA_TTHREAD:
+		}
+		else if (RTType == R_LUA_TTHREAD)
+		{
 			lua_newthread(L);
-			break;
-		case R_LUA_TFUNCTION:
+		}
+		else if (RTType == R_LUA_TFUNCTION)
+		{
 			r_lua_pushvalue(rL, index);
 			lua_pushnumber(L, r_luaL_ref(rL, LUA_REGISTRYINDEX));
 			lua_pushcclosure(L, vanillaFunctionBridge, 1);
-			break;
-		case R_LUA_TTABLE:
+		}
+		else if (RTType == R_LUA_TTABLE)
+		{
 			r_lua_pushvalue(rL, index);
 			lua_newtable(L);
 			r_lua_pushnil(rL);
@@ -291,8 +308,9 @@ namespace Bridge
 				r_lua_pop(rL, 1);
 			}
 			r_lua_pop(rL, 1);
-			break;
-		case R_LUA_TUSERDATA:
+		}
+		else if (RTType == R_LUA_TUSERDATA)
+		{
 			uintptr_t rawInstancePtr = r_lua_touserdata(rL, index);
 			lua_rawgeti(L, LUA_REGISTRYINDEX, rawInstancePtr);
 			if (!lua_type(L, -1))
@@ -304,18 +322,16 @@ namespace Bridge
 				Bridge::push(rL, L, -1);
 				lua_pushcfunction(L, IndexYeet);
 				lua_setfield(L, -2, "__index");
-				lua_pushcfunction(L, UserDataGC);
-				lua_setfield(L, -2, "__gc");
 				lua_setmetatable(L, -2);
 				lua_pushvalue(L, -1);
 				lua_rawseti(L, -10000, rawInstancePtr);
-
 				r_lua_settop(rL, -2);
 			}
-			
-			break;
 		}
-
+		else
+		{
+			lua_pushnil(L);
+		}
 	}
 
 	static int resume(lua_State* thread)
@@ -325,8 +341,8 @@ namespace Bridge
 		lua_xmove(thread, L, nargs);
 		return lua_resume(L, nargs);
 		lua_newtable(L);
-        	lua_pushstring(L, "This metatable is locked");
-        	lua_setfield(L, -2, "__metatable");
+        lua_pushstring(L, "This metatable is locked");
+        lua_setfield(L, -2, "__metatable");
 		lua_close(L);
 
 	}

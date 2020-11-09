@@ -11,6 +11,11 @@
 #include <Tlhelp32.h>
 #include <CommCtrl.h>
 #include <Wininet.h>
+#include "Magic.h"
+
+/* Legandary Shit.*/
+
+/* End of legandary shit*/
 #pragma comment(lib, "wininet.lib")
 using namespace std;
 
@@ -59,10 +64,16 @@ void Executeee(std::string Script) {
 	{
 		lua_pcall(m_L, 0, 0, 0);
 	}
-	UserDataGC(m_L);
+	GarbageCollector(m_L);
 	
 }
 
+#define DebugPrintf printf
+
+namespace AutoUpdating
+{
+	
+}
 
 
 
@@ -114,9 +125,87 @@ DWORD WINAPI input(PVOID lvpParameter)
 }
 
 
+int GetDatamodel()
+{
+	int A = 9;
+	int B = 3;
+
+	int result = A + B;
+
+	static DWORD DMPad[16]{};
+	printf("GETDATAMODEL \n");
+	r_getdatamodel(getdatamodel2(), (DWORD)DMPad);
+	printf("GETDATAMODEL PASSED\n");
+	DWORD DM = DMPad[0];
+	printf("RETURNING DM!! \n");
+	return DM + result;
+	/*
+	GetDataModel, Fixed by Shade and Synapse X source code i guess? xD enjoy this.
+	*/
+}
 
 
 
+
+
+/*
+
+int impl_getflag(DWORD rL)
+{
+	VMProtectBeginMutation("getffloag");
+	std::string flag = r_lua_tostring(rL, 1);
+	std::string ret;
+	bool out = GetValue(flag, ret, 1);
+	if (!out)
+		r_luaL_error(rL, "flag not found");
+	r_lua_pushstring(rL, ret.c_str());
+	return 1;
+	VMProtectEnd();
+}
+
+int impl_setflag(DWORD rL)
+{
+	VMProtectBeginMutation("setfflag");
+	std::string flag = r_lua_tostring(rL, 1);
+	std::string value = r_lua_tostring(rL, 2);
+	std::string ret;
+	bool exist = GetValue(flag, ret, 1);
+	if (!exist)
+		r_luaL_error(rL, "flag not found");
+SetValue(flag, value, 63, 0);
+return 0;
+VMProtectEnd();
+}
+*/
+
+int impl_getflag(lua_State* L)
+{
+	Bridge::push(L, m_rL, 1);
+	std::string flag = lua_tostring(L, 1);
+	std::string ret;
+	bool out = GetValue(flag, ret, 1);
+	if (!out)
+		luaL_error(L, "flag not found u coon");
+	lua_pushstring(L, ret.c_str());
+	return 1;
+}
+
+int impl_setfflag(lua_State* L)
+{
+	if (lua_type(L, 1) != LUA_TSTRING)
+		return luaL_error(L, "expected a string");
+	if (lua_type(L, 2) != LUA_TSTRING)
+		return luaL_error(L, "expected a string");
+	Bridge::push(L, m_rL, 1);
+	std::string flag = lua_tostring(L, 1);
+	std::string value = lua_tostring(L, 2);
+	std::string ret;
+	bool exist = GetValue(flag, ret, 1);
+	if (!exist)
+		luaL_error(L, "flag not found u coon");
+	SetValue(flag, value, 63, 0);
+	return 0;
+}
 
 int getRawMetaTable(lua_State *L) {
 	Bridge::push(L, m_rL, 1);
@@ -130,6 +219,31 @@ int getRawMetaTable(lua_State *L) {
 	return 1;
 }
 
+int GetGenv(lua_State* L)
+{
+	if (lua_gettop(L) != 0)
+		throw std::runtime_error("GetGenv function does not accept arguments");
+	//WrapRobloxLua(robloxState, L, -1);
+	Bridge::push(m_rL, L, -1);
+	lua_pushvalue(L, LUA_GLOBALSINDEX);
+	return 1;
+}
+
+int getNamecallMethod(lua_State* L)
+{
+	/* wrap once*/
+	Bridge::push(m_rL, L, -1);
+	return 1;
+}
+
+
+void RegFuncs(lua_State* L)
+{
+	lua_register(L, "getgenv", GetGenv);
+	lua_register(m_L, "getrawmetatable", getRawMetaTable);
+	lua_register(m_L, "getfflag", impl_getflag);
+	lua_register(m_L, "setfflag", impl_setfflag);
+}
 
 
 
@@ -149,19 +263,50 @@ void ConsoleBypass(const char* Title) {
 	::ShowWindow(ConsoleHandle, SW_NORMAL);
 }
 
-int GetDatamodel()
-{
-	static DWORD DMPad[16]{}; 
-	printf("GETDATAMODEL \n");
-	r_getdatamodel(getdatamodel2(), (DWORD)DMPad);
-	printf("GETDATAMODEL PASSED\n");
-	DWORD DM = DMPad[0];
-	printf("RETURNING DM!! \n");
-	return DM + 12;
-	/*
-	GetDataModel, Fixed by Shade and Synapse X source code i guess? xD enjoy this.
-	*/
+
+void GetRobloxLuaTypes() {
+
+	r_lua_getglobal(m_rL, "print");
+	R_LUA_TFUNCTION = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_pushstring(m_rL, "Lmao");
+	R_LUA_TSTRING = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_pushboolean(m_rL, true);
+	R_LUA_TBOOLEAN = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_getglobal(m_rL, "game");
+	R_LUA_TUSERDATA = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_getglobal(m_rL, "jfddjdsjfdo.......sdijo");
+	R_LUA_TNIL = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_getglobal(m_rL, "table"); // lmao
+	R_LUA_TTABLE = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_getglobal(m_rL, "workspace");
+	r_lua_getfield(m_rL, -1, "Gravity");
+	R_LUA_TNUMBER = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_newthread(m_rL);
+	R_LUA_TTHREAD = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
+	r_lua_pushlightuserdata(m_rL, nullptr);
+	R_LUA_TLIGHTUSERDATA = r_lua_type(m_rL, -1);
+	r_lua_pop(m_rL, 1);
+
 }
+
+
+
 
 const char* GetClass(int self)
 {
@@ -173,40 +318,47 @@ int FindFirstClass(int Instance, const char* Name)
 
 	
 	DWORD StartOfChildren = *(DWORD*)(Instance + 44);
-	printf("START: (%x) \n", StartOfChildren);
+	//printf("START: (%x) \n", StartOfChildren);
 	DWORD EndOfChildren = *(DWORD*)(StartOfChildren + 4);
-	printf("END: (%x08) \n", EndOfChildren);
+	//printf("END: (%x08) \n", EndOfChildren);
 	for (int i = *(int*)StartOfChildren; i != EndOfChildren; i += 8)
 	{
 		if (memcmp(GetClass(*(int*)i), Name, strlen(Name)) == 0)
 		{
-			printf("GOT CLASS!");
+			//printf("GOT CLASS!");
 			return *(int*)i;
 		}
 	}
 }
 
-DWORD OFF_FFC = 0x60D860;
 
-typedef int(__thiscall* findfirstchild)(DWORD rL, const std::string&);
-findfirstchild FindFirstChild_Bait = (findfirstchild)x(OFF_FFC);
+
+
+
+DWORD SetThreadIdentity(DWORD rL, int level)
+{
+	//printf("set id to : (%i) \n", level);
+	return *(DWORD*)(*(DWORD*)(rL + Adresses::Identity2) + 24) = level;
+	//DWORD id1 = *(DWORD*)(rL + 104);
+	//*(DWORD*)(id1 + 24) = *(DWORD*)level;
+	//return 1;
+}
+
+/**/
 
 
 
 
 void getdatamodeltesting()
 {
+	printf("Hi \n");
 	GDM = GetDatamodel();
-	printf("GDM: (%x08)\n", GDM);
+	printf("GDM: %08X\n", GDM);
 	ScriptContext = FindFirstClass(GDM, "ScriptContext");
-	//ScriptContext = FindFirstChild_Bait(GDM, "Script Context");
-	
-	printf("ya cunt (%i)\n", ScriptContext);
-	
-	m_rL = ScriptContext + 56 * 0 + 164 + *(DWORD*)(ScriptContext + 56 * 0 + 164);
 
-	*(DWORD*)(*(DWORD*)(m_rL + 0x70) + 0x18) = 6;
-	//printf("Done! :3 \n");
+	DWORD oldRL = Adresses::RBX_LuaState(ScriptContext);
+
+	m_rL = r_lua_newthread(oldRL);//DecryptRBXState(ScriptContext);
 }
 
 
@@ -229,33 +381,38 @@ void InitGlobals()
 		r_lua_pop(m_rL, 1);
 		std::cout << "WRAPPED GLOBAL: " << Globals[i] << std::endl;
 	}
-	printf("Globals Have been sucessfully wrapped!\n");
+	//printf("Globals Have been sucessfully wrapped!\n");
 }
+
+void PushGlobal(DWORD rL, lua_State* L, const char* s)
+{
+	r_lua_getglobal(rL, s);
+	Bridge::push(rL, L, -1);
+	lua_setglobal(L, s);
+	r_lua_pop(rL, 1);
+	
+}
+
 
 
 
 void main()
 {
 	ConsoleBypass("Axon | Instance Caching ~~ Updated by ElKoax :tm:");
-	getdatamodeltesting();
-
-	m_L = luaL_newstate();
-	Bridge::VehHandlerpush();
-	luaL_openlibs(m_L);
-	InitGlobals();
-	lua_register(m_L, "getrawmetatable", getRawMetaTable);
-	lua_newtable(m_L);
-	lua_setglobal(m_L, "_G");
-	printf("YEETED ON FUNCTIONS\n");
-	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)input, NULL, NULL, NULL);
-	printf("AXON INJECTED!\n");
-	MessageBoxA(NULL, "Credits to ElKoax/KoaxyBoy and ElKoax/KoaxyBoy and XDumper again for the BANGING addies :DDD ", "Credits", MB_OK);
-	std::string urnan;
-	while (true)
-	{
-		std::getline(std::cin, urnan);
-		Executeee(urnan);
-	}
+	/* If luastate is valid*/
+	
+		getdatamodeltesting();
+		SetThreadIdentity(m_rL, 7);
+		GetRobloxLuaTypes();
+		m_L = luaL_newstate();
+		Bridge::VehHandlerpush();
+		luaL_openlibs(m_L);
+		InitGlobals();
+		RegFuncs(m_L);
+		lua_newtable(m_L);
+		lua_setglobal(m_L, "_G");
+		CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)input, NULL, NULL, NULL);
+		MessageBoxA(NULL, "Credits to ElKoax/KoaxyBoy and ElKoax/KoaxyBoy and XDumper again for the BANGING addies :DDD ", "Credits", MB_OK);
 }
 
 
